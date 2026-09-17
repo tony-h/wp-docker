@@ -29,3 +29,7 @@ RUN a2enmod rewrite expires ssl headers && \
 COPY apache/site.conf /etc/apache2/sites-available/000-default.conf
 COPY apache/php-overrides.ini /usr/local/etc/php/conf.d/php-overrides.ini
 COPY wp-env-parser.php /usr/local/etc/wp-env-parser.php
+
+# Add the salt generator tool
+COPY generate-salts.sh /usr/local/bin/generate-salts
+RUN chmod +x /usr/local/bin/generate-salts

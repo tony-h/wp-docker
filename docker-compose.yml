@@ -5,9 +5,21 @@ services:
       dockerfile: Dockerfile
     image: local/wp-docker-6:latest
     container_name: ${SITE_LABEL}
+
+    # For BulletProof Security log access:
+    # Creates the file if missing, fixes permissions, then starts Apache
+    command: >
+      bash -c "
+      [ ! -f /var/log/apache2/php_errors.log ] && touch /var/log/apache2/php_errors.log;
+      find /var/log/apache2/php_errors.log ! -user www-data -exec chown www-data:www-data {} +;
+      exec apache2-foreground"
+
     volumes:
       - ./wordpress:/var/www/html
       - ./logs:/var/log/apache2
+      # Uncomment the lines below to hot-swap Apache and PHP settings without rebuilding the image.
+      # - ./build-context/apache/site.conf:/etc/apache2/sites-available/000-default.conf:ro
+      # - ./build-context/apache/php-overrides.ini:/usr/local/etc/php/conf.d/php-overrides.ini:ro
     restart: always
     environment:
       # Instructs WP's default entrypoint to append this to wp-config.php
@@ -18,6 +30,16 @@ services:
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+
+      # WordPress salts
+      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY}
+      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY}
+      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY}
+      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY}
+      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT}
+      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT}
+      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT}
+      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT}
 
       #
       # Add additional environment variables for use in WordPress (web interface and CLI)
