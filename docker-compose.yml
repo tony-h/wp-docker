@@ -57,8 +57,8 @@ services:
       WP_CFG_SMTP_SEC: ${SMTP_SEC}
       
       # OAuth settings for https://wordpress.org/plugins/login-with-google/
-      # WP_CFG_WP_GOOGLE_LOGIN_CLIENT_ID: ${WP_GOOGLE_LOGIN_CLIENT_ID}
-      # WP_CFG_WP_GOOGLE_LOGIN_SECRET: ${WP_GOOGLE_LOGIN_SECRET}
+      WP_CFG_WP_GOOGLE_LOGIN_CLIENT_ID: ${WP_GOOGLE_LOGIN_CLIENT_ID}
+      WP_CFG_WP_GOOGLE_LOGIN_SECRET: ${WP_GOOGLE_LOGIN_SECRET}
 
       # Redis settings for https://wordpress.org/plugins/redis-cache/
       WP_CFG_WP_REDIS_HOST: redis
