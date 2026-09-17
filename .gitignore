@@ -1,0 +1,12 @@
+# Configs and logs
+.env
+.DS_Store
+*backup*
+*.txt
+*.log
+logs/
+
+# WordPress Docker specific
+db_data/
+wordpress/
+redis_data/

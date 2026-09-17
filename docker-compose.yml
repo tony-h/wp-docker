@@ -1,0 +1,99 @@
+services:
+  wp:
+    build:
+      context: ./build-context
+      dockerfile: Dockerfile
+    image: local/wp-docker-6:latest
+    container_name: ${SITE_LABEL}
+    volumes:
+      - ./wordpress:/var/www/html
+      - ./logs:/var/log/apache2
+    restart: always
+    environment:
+      # Instructs WP's default entrypoint to append this to wp-config.php
+      WORDPRESS_CONFIG_EXTRA: "require_once('/usr/local/etc/wp-env-parser.php');"
+
+      # Native WP DB settings
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+
+      #
+      # Add additional environment variables for use in WordPress (web interface and CLI)
+      # Note: These variables must use the `WP_CFG_` prefix to be recognized by the parser
+      #
+
+      # SMTP settings for https://wordpress.org/plugins/simple-smtp/
+      WP_CFG_SMTP_DISABLE: ${SMTP_DISABLE}
+      WP_CFG_SMTP_USER: ${SMTP_USER}
+      WP_CFG_SMTP_FROM: ${SMTP_FROM}
+      WP_CFG_SMTP_PASS: ${SMTP_PASS}
+      WP_CFG_SMTP_HOST: ${SMTP_HOST}
+      WP_CFG_SMTP_PORT: ${SMTP_PORT}
+      WP_CFG_SMTP_AUTH: ${SMTP_AUTH}
+      WP_CFG_SMTP_SEC: ${SMTP_SEC}
+      
+      # OAuth settings for https://wordpress.org/plugins/login-with-google/
+      # WP_CFG_WP_GOOGLE_LOGIN_CLIENT_ID: ${WP_GOOGLE_LOGIN_CLIENT_ID}
+      # WP_CFG_WP_GOOGLE_LOGIN_SECRET: ${WP_GOOGLE_LOGIN_SECRET}
+
+      # Redis settings for https://wordpress.org/plugins/redis-cache/
+      WP_CFG_WP_REDIS_HOST: redis
+      WP_CFG_WP_CACHE_KEY_SALT: ${WORDPRESS_WP_CACHE_KEY_SALT}
+      WP_CFG_WP_CACHE: true
+      WP_CFG_DISABLE_WP_CRON: true
+
+    depends_on:
+      - db
+      - redis
+    labels:
+      - "ofelia.enabled=true"
+      - "ofelia.job-exec.wp-cron.schedule=@every 5m"
+      - "ofelia.job-exec.wp-cron.command=/usr/local/bin/php /var/www/html/wp-cron.php"
+      - "ofelia.job-exec.wp-cron.user=www-data"
+      - "ofelia.job-exec.wp-update.schedule=@daily"
+      - "ofelia.job-exec.wp-update.command=/usr/local/bin/wp plugin update --all --path=/var/www/html"
+      - "ofelia.job-exec.wp-update.user=www-data"
+    networks:
+      - gateway-net
+      - default
+
+  db:
+    image: mariadb:lts
+    restart: always
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+  redis:
+    image: redis:alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: ${SITE_LABEL}-ofelia
+    depends_on:
+      - wp
+    command: daemon --docker --docker-filter name=${SITE_LABEL}
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  gateway-net:
+    external: true
+
+volumes:
+  redis_data:
