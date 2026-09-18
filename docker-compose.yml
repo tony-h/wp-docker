@@ -3,7 +3,7 @@ services:
     build:
       context: ./build-context
       dockerfile: Dockerfile
-    image: local/wp-docker-6:latest
+    image: local/wordpress-6:latest
     container_name: ${SITE_LABEL}
 
     # For BulletProof Security log access:
