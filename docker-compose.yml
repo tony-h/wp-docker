@@ -70,6 +70,7 @@ services:
       - db
       - redis
     labels:
+      - "scheduler=${SITE_LABEL}"
       - "ofelia.enabled=true"
       - "ofelia.job-exec.wp-cron.schedule=@every 5m"
       - "ofelia.job-exec.wp-cron.command=/usr/local/bin/php /var/www/html/wp-cron.php"
@@ -103,7 +104,10 @@ services:
     container_name: ${SITE_LABEL}-ofelia
     depends_on:
       - wp
-    command: daemon --docker --docker-filter name=${SITE_LABEL}
+    command: >
+      daemon
+      --docker
+      --docker-filter label=scheduler=${SITE_LABEL}
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
