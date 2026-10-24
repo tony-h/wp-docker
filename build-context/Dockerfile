@@ -1,4 +1,4 @@
-FROM wordpress:6-php8.3-apache
+FROM wordpress:7-php8.4-apache
 
 ENV TZ=Europe/London
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
