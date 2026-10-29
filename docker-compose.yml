@@ -4,15 +4,15 @@ services:
       context: ./build-context
       dockerfile: Dockerfile
     image: local/wordpress-7-php8.4:latest
-    container_name: ${SITE_LABEL}
+    container_name: "${SITE_LABEL}"
 
-    # For BulletProof Security log access:
+# For BulletProof Security log access:
     # Creates the file if missing, fixes permissions, then starts Apache
     command: >
       bash -c "
       [ ! -f /var/log/apache2/php_errors.log ] && touch /var/log/apache2/php_errors.log;
       find /var/log/apache2/php_errors.log ! -user www-data -exec chown www-data:www-data {} +;
-      exec apache2-foreground"
+      exec docker-entrypoint.sh apache2-foreground"
 
     volumes:
       - ./wordpress:/var/www/html
@@ -27,19 +27,19 @@ services:
 
       # Native WP DB settings
       WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
-      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: "${MYSQL_USER}"
+      WORDPRESS_DB_PASSWORD: "${MYSQL_PASSWORD}"
+      WORDPRESS_DB_NAME: "${MYSQL_DATABASE}"
 
       # WordPress salts
-      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY}
-      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY}
-      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY}
-      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY}
-      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT}
-      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT}
-      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT}
-      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT}
+      WORDPRESS_AUTH_KEY: "${WORDPRESS_AUTH_KEY}"
+      WORDPRESS_SECURE_AUTH_KEY: "${WORDPRESS_SECURE_AUTH_KEY}"
+      WORDPRESS_LOGGED_IN_KEY: "${WORDPRESS_LOGGED_IN_KEY}"
+      WORDPRESS_NONCE_KEY: "${WORDPRESS_NONCE_KEY}"
+      WORDPRESS_AUTH_SALT: "${WORDPRESS_AUTH_SALT}"
+      WORDPRESS_SECURE_AUTH_SALT: "${WORDPRESS_SECURE_AUTH_SALT}"
+      WORDPRESS_LOGGED_IN_SALT: "${WORDPRESS_LOGGED_IN_SALT}"
+      WORDPRESS_NONCE_SALT: "${WORDPRESS_NONCE_SALT}"
 
       #
       # Add additional environment variables for use in WordPress (web interface and CLI)
@@ -47,28 +47,30 @@ services:
       #
 
       # SMTP settings for https://wordpress.org/plugins/simple-smtp/
-      WP_CFG_SMTP_DISABLE: ${SMTP_DISABLE}
-      WP_CFG_SMTP_USER: ${SMTP_USER}
-      WP_CFG_SMTP_FROM: ${SMTP_FROM}
-      WP_CFG_SMTP_PASS: ${SMTP_PASS}
-      WP_CFG_SMTP_HOST: ${SMTP_HOST}
-      WP_CFG_SMTP_PORT: ${SMTP_PORT}
-      WP_CFG_SMTP_AUTH: ${SMTP_AUTH}
-      WP_CFG_SMTP_SEC: ${SMTP_SEC}
+      WP_CFG_SMTP_DISABLE: "${SMTP_DISABLE}"
+      WP_CFG_SMTP_USER: "${SMTP_USER}"
+      WP_CFG_SMTP_FROM: "${SMTP_FROM}"
+      WP_CFG_SMTP_PASS: "${SMTP_PASS}"
+      WP_CFG_SMTP_HOST: "${SMTP_HOST}"
+      WP_CFG_SMTP_PORT: "${SMTP_PORT}"
+      WP_CFG_SMTP_AUTH: "${SMTP_AUTH}"
+      WP_CFG_SMTP_SEC: "${SMTP_SEC}"
       
       # OAuth settings for https://wordpress.org/plugins/login-with-google/
-      WP_CFG_WP_GOOGLE_LOGIN_CLIENT_ID: ${WP_GOOGLE_LOGIN_CLIENT_ID}
-      WP_CFG_WP_GOOGLE_LOGIN_SECRET: ${WP_GOOGLE_LOGIN_SECRET}
+      WP_CFG_WP_GOOGLE_LOGIN_CLIENT_ID: "${WP_GOOGLE_LOGIN_CLIENT_ID}"
+      WP_CFG_WP_GOOGLE_LOGIN_SECRET: "${WP_GOOGLE_LOGIN_SECRET}"
 
       # Redis settings for https://wordpress.org/plugins/redis-cache/
       WP_CFG_WP_REDIS_HOST: redis
-      WP_CFG_WP_CACHE_KEY_SALT: ${WORDPRESS_WP_CACHE_KEY_SALT}
+      WP_CFG_WP_REDIS_PREFIX: "${SITE_LABEL}:"
       WP_CFG_WP_CACHE: true
       WP_CFG_DISABLE_WP_CRON: true
 
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     labels:
       - "scheduler=${SITE_LABEL}"
       - "ofelia.enabled=true"
@@ -84,14 +86,19 @@ services:
 
   db:
     image: mariadb:lts
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: always
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
 
   redis:
     image: redis:alpine
@@ -101,7 +108,7 @@ services:
 
   ofelia:
     image: mcuadros/ofelia:latest
-    container_name: ${SITE_LABEL}-ofelia
+    container_name: "${SITE_LABEL}-ofelia"
     depends_on:
       - wp
     command: >
