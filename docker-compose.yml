@@ -85,7 +85,7 @@ services:
       - default
 
   db:
-    image: mariadb:lts
+    image: mariadb:12.3
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -95,6 +95,7 @@ services:
     volumes:
       - ./db_data:/var/lib/mysql
     environment:
+      MARIADB_AUTO_UPGRADE: "1"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       MYSQL_USER: "${MYSQL_USER}"
       MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
